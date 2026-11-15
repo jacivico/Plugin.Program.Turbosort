@@ -7,7 +7,7 @@
     n.append(...children);
     return n;
   };
-  const STATUS = { pending: 'Sin pago', authorized: 'Preautorizada', captured: 'Cobrada', released: 'Liberada' };
+  const STATUS = { rejected: 'Tarjeta no admitida', pending: 'Sin pago', authorized: 'Preautorizada', captured: 'Cobrada', released: 'Liberada' };
   const SLOT = { any: 'Indiferente', morning: 'Mañana', afternoon: 'Tarde' };
   let password = '';
   try { password = sessionStorage.getItem('admin') || ''; } catch { /* sin almacenamiento */ }
@@ -42,6 +42,13 @@
       el('div', { class: 'scroll' }, el('table', {},
         el('thead', {}, el('tr', {}, ...['Nombre', 'Pasaporte / doc.', 'Edad', 'Nac.'].map((h) => el('th', { text: h })))),
         el('tbody', {}, ...rows))));
+    if (b.card_brand) {
+      // Aviso si la retención caduca antes del día de la visita.
+      const expiresEarly = b.status === 'authorized' && b.capture_before && b.capture_before.slice(0, 10) <= b.visit_date;
+      node.insertBefore(
+        el('p', { class: `meta${expiresEarly ? ' warn' : ''}`, text: `Tarjeta: ${b.card_brand}${b.capture_before ? ` · la retención caduca el ${when(b.capture_before)}` : ''}${expiresEarly ? ' · CADUCA ANTES DE LA VISITA: cobra o libera antes de esa fecha' : ''}` }),
+        node.children[2]);
+    }
     if (b.status === 'authorized') {
       const capture = el('button', { class: 'btn btn-gold btn-sm', type: 'button', text: 'Confirmar y cobrar' });
       const release = el('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: 'Liberar retención' });

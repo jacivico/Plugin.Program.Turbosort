@@ -26,6 +26,11 @@ function open(dbPath) {
     CREATE INDEX IF NOT EXISTS bookings_pi ON bookings (payment_intent_id);
   `);
 
+  // Migración: columnas añadidas después de la primera versión.
+  const cols = db.prepare('PRAGMA table_info(bookings)').all().map((c) => c.name);
+  if (!cols.includes('card_brand')) db.exec('ALTER TABLE bookings ADD COLUMN card_brand TEXT');
+  if (!cols.includes('capture_before')) db.exec('ALTER TABLE bookings ADD COLUMN capture_before TEXT');
+
   const row = (r) => (r ? { ...r, visitors: JSON.parse(r.visitors) } : null);
 
   return {
@@ -38,10 +43,11 @@ function open(dbPath) {
     get: (id) => row(db.prepare('SELECT * FROM bookings WHERE id = ?').get(id)),
     getByPaymentIntent: (pi) => row(db.prepare('SELECT * FROM bookings WHERE payment_intent_id = ?').get(pi)),
     setStatus: (id, status) => db.prepare('UPDATE bookings SET status = ? WHERE id = ?').run(status, id),
+    setCard: (id, brand, captureBefore) => db.prepare('UPDATE bookings SET card_brand = ?, capture_before = ? WHERE id = ?').run(brand, captureBefore, id),
     // Las solicitudes "pending" (pago nunca completado) no se muestran salvo que se pidan.
     list: (includePending) =>
       db
-        .prepare(`SELECT * FROM bookings ${includePending ? '' : "WHERE status != 'pending'"} ORDER BY visit_date ASC, created_at ASC`)
+        .prepare(`SELECT * FROM bookings ${includePending ? '' : "WHERE status NOT IN ('pending', 'rejected')"} ORDER BY visit_date ASC, created_at ASC`)
         .all()
         .map(row),
   };

@@ -47,6 +47,14 @@
     return { dow: f({ weekday: 'short' }), num: f({ day: 'numeric' }), mon: f({ month: 'short' }), long: f({ weekday: 'long', day: 'numeric', month: 'long' }) };
   };
 
+  // ---------- tarjetas admitidas por fecha ----------
+  const cardsOf = (iso) => state.config.dates.find((d) => d.date === iso)?.cards || [];
+  const BRAND = { visa: 'Visa', mastercard: 'Mastercard' };
+  const cardIcons = (cards) =>
+    el('span', { class: 'cards', role: 'img', 'aria-label': cards.map((c) => BRAND[c]).join(' + ') },
+      ...cards.map((c) => el('span', { class: `cb ${c}`, text: c === 'visa' ? 'VISA' : '' })));
+  const cardsText = (cards) => t(cards.length > 1 ? 'cards.both' : 'cards.mc');
+
   // ---------- precios (espejo del servidor; el servidor recalcula siempre) ----------
   const priceFor = (age) => {
     const p = state.config.pricing;
@@ -80,18 +88,23 @@
   }
 
   function renderDays() {
-    $('#days').replaceChildren(
-      ...state.config.dates.map((iso, i) => {
-        const p = dateParts(iso);
-        const b = el('button', { type: 'button', class: 'day', role: 'radio', 'aria-checked': String(state.date === iso), 'aria-label': p.long },
-          el('span', { class: 'dow', text: p.dow }),
-          el('span', { class: 'num', text: p.num }),
-          el('span', { class: 'mon', text: p.mon }),
-          el('span', { class: 'tag', text: i === 0 && state.config.firstIsTomorrow ? t('tag.tomorrow') : '' }));
-        b.addEventListener('click', () => { state.date = iso; hideError(1); renderDays(); renderSummary(); });
-        return b;
-      })
-    );
+    const nodes = [];
+    let prev = null;
+    state.config.dates.forEach(({ date: iso, cards }, i) => {
+      const key = cards.join('+');
+      // Separador al cambiar de grupo de tarjetas admitidas.
+      if (key !== prev) nodes.push(el('div', { class: 'sep' }, cardIcons(cards), el('span', { text: cardsText(cards) })));
+      prev = key;
+      const p = dateParts(iso);
+      const b = el('button', { type: 'button', class: 'day', role: 'radio', 'aria-checked': String(state.date === iso), 'aria-label': `${p.long} · ${cardsText(cards)}` },
+        el('span', { class: 'dow', text: p.dow }),
+        el('span', { class: 'num', text: p.num }),
+        el('span', { class: 'mon', text: p.mon }),
+        i === 0 && state.config.firstIsTomorrow ? el('span', { class: 'tag', text: t('tag.tomorrow') }) : cardIcons(cards));
+      b.addEventListener('click', () => { state.date = iso; hideError(1); renderDays(); renderSummary(); });
+      nodes.push(b);
+    });
+    $('#days').replaceChildren(...nodes);
   }
 
   function renderSlots() {
@@ -152,6 +165,9 @@
   function renderSummary() {
     $('#sum-date').textContent = state.date ? dateParts(state.date).long : '—';
     $('#sum-slot').textContent = t(`slot.${state.slot}`);
+    const cards = state.date ? cardsOf(state.date) : [];
+    $('#sum-cards').replaceChildren(cards.length ? cardIcons(cards) : '—');
+    $('#cards-note').replaceChildren(...(cards.length ? [cardIcons(cards), el('span', { text: t(cards.length > 1 ? 'note.both' : 'note.mc') })] : []));
     const groups = new Map();
     for (const v of state.visitors) {
       const age = parsedAge(v) ?? 99;
@@ -257,6 +273,8 @@
         state.elements = state.stripe.elements({
           clientSecret: state.booking.clientSecret,
           locale: state.lang,
+          // Solo se muestran como válidas las marcas admitidas para la fecha (el servidor lo vuelve a comprobar).
+          disallowedCardBrands: ['american_express', 'discover_global_network', ...(cardsOf(state.date).includes('visa') ? [] : ['visa'])],
           appearance: { theme: 'stripe', variables: { colorPrimary: '#15211c', borderRadius: '4px', fontFamily: 'Inter, system-ui, sans-serif' } },
         });
         $('#payment-element').replaceChildren();
@@ -284,7 +302,7 @@
     const id = state.booking.bookingId;
     try {
       if (state.booking.demo) {
-        showResult(await api(`/api/bookings/${id}/demo-authorize`, {}));
+        showResult(await api(`/api/bookings/${id}/demo-authorize`, { brand: $('input[name="demo-brand"]:checked').value }));
         return;
       }
       const { error } = await state.stripe.confirmPayment({
@@ -308,6 +326,13 @@
   }
 
   function showResult(b) {
+    if (b.status === 'rejected') {
+      // Tarjeta no admitida para la fecha: la retención ya está liberada y hay que repetir el pago.
+      Object.assign(state, { booking: null, bookingKey: null, elements: null });
+      $('#demo-pay').hidden = true;
+      showStep(2);
+      return showError(2, b.cards.length > 1 ? 'err.cardBoth' : 'err.cardMc');
+    }
     const ok = b.status === 'authorized' || b.status === 'captured';
     $('[data-panel="4"]').classList.toggle('warn', !ok);
     $('.seal').textContent = ok ? '✓' : '…';
@@ -338,7 +363,7 @@
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
     const next = new Date(`${today}T12:00:00Z`);
     next.setUTCDate(next.getUTCDate() + 1);
-    state.config.firstIsTomorrow = state.config.dates[0] === next.toISOString().slice(0, 10);
+    state.config.firstIsTomorrow = state.config.dates[0]?.date === next.toISOString().slice(0, 10);
   }
 
   // ---------- inicio ----------

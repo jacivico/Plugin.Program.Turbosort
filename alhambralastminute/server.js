@@ -3,7 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const express = require('express');
 const config = require('./lib/config');
-const { bookableDates } = require('./lib/dates');
+const { bookableDates, cardsFor } = require('./lib/dates');
 const { validateBooking } = require('./lib/booking');
 const db = require('./lib/db').open(config.dbPath);
 
@@ -19,6 +19,32 @@ const STATUS_FROM_PI = {
   canceled: 'released', // retención liberada
 };
 const statusFromPI = (pi) => STATUS_FROM_PI[pi.status] || 'pending';
+
+/**
+ * Pone la reserva al día con Stripe. Cuando la retención acaba de hacerse comprueba la marca
+ * de la tarjeta: si no está admitida para esa fecha, libera la retención y rechaza la solicitud.
+ */
+async function reconcile(booking) {
+  if (!stripe || !booking.payment_intent_id || booking.status !== 'pending') return booking;
+  const pi = await stripe.paymentIntents.retrieve(booking.payment_intent_id, { expand: ['latest_charge'] });
+  let status = statusFromPI(pi);
+  if (status === 'authorized') {
+    const card = pi.latest_charge?.payment_method_details?.card;
+    const brand = card?.brand || 'unknown';
+    const allowed = cardsFor(booking.visit_date, config.rules, new Date(booking.created_at));
+    if (!allowed.includes(brand)) {
+      try {
+        await stripe.paymentIntents.cancel(pi.id);
+      } catch (err) {
+        console.error('Stripe cancel (card not accepted) failed:', err.message);
+      }
+      status = 'rejected';
+    }
+    db.setCard(booking.id, brand, card?.capture_before ? new Date(card.capture_before * 1000).toISOString() : null);
+  }
+  if (status !== 'pending') db.setStatus(booking.id, status);
+  return db.get(booking.id);
+}
 
 app.use((req, res, next) => {
   res.set({
@@ -42,7 +68,7 @@ app.use((req, res, next) => {
 });
 
 // --- Webhook de Stripe: necesita el cuerpo sin parsear, por eso va antes de express.json() ---
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   if (!stripe || !config.stripeWebhookSecret) return res.status(503).end();
   let event;
   try {
@@ -53,10 +79,16 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   if (event.type.startsWith('payment_intent.')) {
     const pi = event.data.object;
     const booking = db.getByPaymentIntent(pi.id);
-    if (booking) {
-      const status = statusFromPI(pi);
-      // Un evento atrasado nunca devuelve a "pending" una reserva ya autorizada.
-      if (status !== 'pending' && status !== booking.status) db.setStatus(booking.id, status);
+    try {
+      if (booking?.status === 'pending') await reconcile(booking);
+      else if (booking && booking.status !== 'rejected') {
+        // Un evento atrasado nunca devuelve a "pending" una reserva ya autorizada.
+        const status = statusFromPI(pi);
+        if (status !== 'pending' && status !== booking.status) db.setStatus(booking.id, status);
+      }
+    } catch (err) {
+      console.error('Webhook reconcile failed:', err.message);
+      return res.status(500).end(); // Stripe reintentará
     }
   }
   res.json({ received: true });
@@ -86,6 +118,7 @@ const publicView = (b) => ({
   amount: b.amount,
   currency: b.currency,
   people: b.visitors.length,
+  cards: cardsFor(b.visit_date, config.rules, new Date(b.created_at)),
 });
 
 app.get('/api/config', (req, res) => {
@@ -93,7 +126,7 @@ app.get('/api/config', (req, res) => {
   res.json({
     demo: config.demo,
     publishableKey: config.demo ? null : config.stripePublishableKey,
-    dates: bookableDates(config.rules),
+    dates: bookableDates(config.rules).map((date) => ({ date, cards: cardsFor(date, config.rules) })),
     slots: config.slots,
     maxGroupSize: config.rules.maxGroupSize,
     pricing: config.pricing,
@@ -119,6 +152,8 @@ app.post('/api/bookings', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         currency: d.currency,
         capture_method: 'manual', // solo preautoriza; el cobro se hace al confirmar la visita
         payment_method_types: ['card'],
+        // Pide la retención ampliada (hasta 30 días con Mastercard) cuando la red lo permite.
+        payment_method_options: { card: { request_extended_authorization: 'if_available' } },
         receipt_email: d.email,
         description: `Alhambra Last Minute · ${d.visitDate} · ${d.visitors.length} pax`,
         metadata: { booking_id: id, visit_date: d.visitDate, people: String(d.visitors.length) },
@@ -136,19 +171,12 @@ app.post('/api/bookings', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
 
 // El navegador llama aquí tras confirmar el pago (o al volver del 3-D Secure).
 app.post('/api/bookings/:id/sync', async (req, res) => {
-  const booking = db.get(req.params.id);
+  let booking = db.get(req.params.id);
   if (!booking) return res.status(404).json({ error: 'not_found' });
-  if (stripe && booking.payment_intent_id && booking.status === 'pending') {
-    try {
-      const pi = await stripe.paymentIntents.retrieve(booking.payment_intent_id);
-      const status = statusFromPI(pi);
-      if (status !== booking.status) {
-        db.setStatus(booking.id, status);
-        booking.status = status;
-      }
-    } catch (err) {
-      console.error('Stripe retrieve failed:', err.message);
-    }
+  try {
+    booking = await reconcile(booking);
+  } catch (err) {
+    console.error('Stripe reconcile failed:', err.message);
   }
   res.json(publicView(booking));
 });
@@ -158,7 +186,15 @@ app.post('/api/bookings/:id/demo-authorize', (req, res) => {
   if (!config.demo) return res.status(404).end();
   const booking = db.get(req.params.id);
   if (!booking) return res.status(404).json({ error: 'not_found' });
-  if (booking.status === 'pending') db.setStatus(booking.id, 'authorized');
+  if (booking.status === 'pending') {
+    // Misma regla que con Stripe real: la marca debe estar admitida para la fecha.
+    const brand = req.body?.brand === 'visa' ? 'visa' : 'mastercard';
+    const created = new Date(booking.created_at);
+    const ok = cardsFor(booking.visit_date, config.rules, created).includes(brand);
+    const days = brand === 'visa' ? 7 : 30;
+    db.setCard(booking.id, brand, ok ? new Date(created.getTime() + days * 86400000).toISOString() : null);
+    db.setStatus(booking.id, ok ? 'authorized' : 'rejected');
+  }
   res.json(publicView(db.get(booking.id)));
 });
 

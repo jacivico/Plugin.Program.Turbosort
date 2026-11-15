@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Alhambra Last Minute · Visitas de última hora a la Alhambra</title>
-  <meta name="description" content="Reserva tu visita a la Alhambra para los próximos 15 días. Elige día, indica los datos de los visitantes y deja una preautorización: solo se cobra si confirmamos tu visita.">
+  <meta name="description" content="Reserva tu visita a la Alhambra para los próximos 30 días. Elige día, indica los datos de los visitantes y deja una preautorización: solo se cobra si confirmamos tu visita.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -111,9 +111,14 @@
             <section class="panel" data-panel="3" hidden>
               <h3 data-i18n="s3.title"></h3>
               <p class="hint" data-i18n="s3.hint"></p>
+              <p class="cards-note" id="cards-note"></p>
               <div id="payment-element"></div>
               <div class="demo-pay" id="demo-pay" hidden>
                 <p data-i18n="demo.pay"></p>
+                <div class="chips" id="demo-brand">
+                  <label class="chip-radio"><input type="radio" name="demo-brand" value="mastercard" checked> Mastercard</label>
+                  <label class="chip-radio"><input type="radio" name="demo-brand" value="visa"> Visa</label>
+                </div>
               </div>
               <p class="error" id="err-3" role="alert" hidden></p>
               <div class="actions">
@@ -138,6 +143,7 @@
             <dl>
               <div><dt data-i18n="sum.date"></dt><dd id="sum-date">—</dd></div>
               <div><dt data-i18n="sum.slot"></dt><dd id="sum-slot">—</dd></div>
+              <div><dt data-i18n="sum.cards"></dt><dd id="sum-cards">—</dd></div>
             </dl>
             <ul class="lines" id="sum-lines"></ul>
             <div class="total"><span data-i18n="sum.total"></span><strong id="sum-total">—</strong></div>

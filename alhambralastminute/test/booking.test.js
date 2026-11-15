@@ -1,11 +1,11 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { bookableDates, todayISO, addDays } = require('../lib/dates');
+const { bookableDates, cardsFor, todayISO, addDays } = require('../lib/dates');
 const { validateBooking } = require('../lib/booking');
 
 const config = {
-  rules: { firstDayOffset: 1, bookableDays: 15, blockedDates: [], maxGroupSize: 10 },
+  rules: { firstDayOffset: 1, lastDayOffset: 29, visaMaxOffset: 6, blockedDates: [], maxGroupSize: 10 },
   pricing: { currency: 'eur', adultCents: 8900, childCents: 5900, childMinAge: 3, childMaxAge: 11 },
   slots: ['any', 'morning', 'afternoon'],
 };
@@ -20,11 +20,18 @@ const base = (over = {}) => ({
   ...over,
 });
 
-test('ventana: de mañana a mañana+14 (15 días)', () => {
+test('ventana: de mañana a hoy+29', () => {
   const d = bookableDates(config.rules, now);
-  assert.equal(d.length, 15);
+  assert.equal(d.length, 29);
   assert.equal(d[0], '2026-11-15');
-  assert.equal(d[14], '2026-11-29');
+  assert.equal(d.at(-1), '2026-12-13');
+});
+
+test('tarjetas: hasta hoy+6 Visa y Mastercard; de hoy+7 a hoy+29 solo Mastercard', () => {
+  assert.deepEqual(cardsFor('2026-11-15', config.rules, now), ['visa', 'mastercard']);
+  assert.deepEqual(cardsFor('2026-11-20', config.rules, now), ['visa', 'mastercard']); // hoy+6
+  assert.deepEqual(cardsFor('2026-11-21', config.rules, now), ['mastercard']); // hoy+7
+  assert.deepEqual(cardsFor('2026-12-13', config.rules, now), ['mastercard']); // hoy+29
 });
 
 test('el día se calcula en hora de Granada, no en UTC', () => {
@@ -39,8 +46,8 @@ test('fechas bloqueadas se excluyen', () => {
   assert.ok(!bookableDates(rules, now).includes('2026-11-16'));
 });
 
-test('rechaza hoy, día 16º y fechas inválidas', () => {
-  for (const date of ['2026-11-14', '2026-11-30', '2027-01-01', 'nope', undefined]) {
+test('rechaza hoy, hoy+30 y fechas inválidas', () => {
+  for (const date of ['2026-11-14', '2026-12-14', '2027-01-01', 'nope', undefined]) {
     const r = validateBooking(base({ date }), config, now);
     assert.equal(r.ok, false);
     assert.ok(r.errors.includes('date'));

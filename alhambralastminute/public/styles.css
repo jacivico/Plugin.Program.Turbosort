@@ -83,11 +83,23 @@ a { color: inherit; }
 .panel h3, .summary h3 { font-size: 1.8rem; }
 .hint { color: var(--muted); margin: .5rem 0 1.6rem; }
 
-.days { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.cards { display: inline-flex; align-items: center; gap: 4px; min-height: 16px; }
+.cb { display: inline-flex; align-items: center; justify-content: center; height: 16px; border-radius: 3px; background: #fff; border: 1px solid #d9d9d9; }
+.cb.visa { padding: 0 4px; font: italic 800 9px/1 Arial, Helvetica, sans-serif; letter-spacing: .02em; color: #1a1f71; }
+.cb.mastercard { width: 26px; position: relative; }
+.cb.mastercard::before, .cb.mastercard::after { content: ''; position: absolute; top: 2px; width: 10px; height: 10px; border-radius: 50%; }
+.cb.mastercard::before { left: 4px; background: #eb001b; }
+.cb.mastercard::after { right: 4px; background: #f79e1b; opacity: .92; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.days .sep { grid-column: 1 / -1; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+.days .sep:first-child { margin-top: 0; }
+.cards-note { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin: -0.6rem 0 1.4rem; }
+.chip-radio { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--text); cursor: pointer; }
+.demo-pay .chips { margin-top: 12px; gap: 18px; }
 .day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; font: inherit; color: var(--text); transition: border-color .15s, background .15s; }
 .day:hover { border-color: var(--gold); }
 .day .dow { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.day .num { font-family: var(--serif); font-size: 1.9rem; line-height: 1.05; font-weight: 600; }
+.day .num { font-family: var(--serif); font-size: 1.7rem; line-height: 1.05; font-weight: 600; }
 .day .mon { font-size: .72rem; color: var(--muted); text-transform: capitalize; }
 .day .tag { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--terra); font-weight: 600; min-height: .9rem; }
 .day[aria-checked='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
@@ -131,6 +143,7 @@ input:focus, select:focus { border-color: var(--gold); outline: none; box-shadow
 .summary dl div, .receipt div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .summary dt, .receipt dt { color: var(--muted); font-size: .88rem; }
 .summary dd, .receipt dd { margin: 0; text-align: right; font-weight: 500; }
+.summary dd .cards, .receipt dd .cards { vertical-align: middle; }
 .summary dd::first-letter, .receipt dd::first-letter { text-transform: uppercase; }
 .lines { list-style: none; margin: 0; padding: 0; }
 .lines li { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
@@ -171,7 +184,7 @@ input:focus, select:focus { border-color: var(--gold); outline: none; box-shadow
   .site-nav a:not(.btn) { display: none; }
   .brand { font-size: 1.15rem; }
   .wrap, .hero-inner { padding-left: 16px; padding-right: 16px; }
-  .days { grid-template-columns: repeat(3, 1fr); }
+  .days { grid-template-columns: repeat(4, 1fr); }
   .fields.two, .fields.four { grid-template-columns: 1fr; }
   .actions .btn { flex: 1; }
   .progress li span { display: none; }

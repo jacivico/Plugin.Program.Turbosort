@@ -20,7 +20,10 @@ const config = {
   adminPassword: process.env.ADMIN_PASSWORD || '',
   rules: {
     firstDayOffset: int('FIRST_DAY_OFFSET', 1),
-    bookableDays: int('BOOKABLE_DAYS', 15),
+    // Último día reservable = hoy + lastDayOffset (29 = 30 días contando hoy)
+    lastDayOffset: int('LAST_DAY_OFFSET', 29),
+    // Hasta hoy + visaMaxOffset se aceptan Visa y Mastercard; después, solo Mastercard
+    visaMaxOffset: int('VISA_MAX_OFFSET', 6),
     blockedDates: (process.env.BLOCKED_DATES || '').split(',').map((s) => s.trim()).filter(Boolean),
     maxGroupSize: int('MAX_GROUP_SIZE', 10),
   },
