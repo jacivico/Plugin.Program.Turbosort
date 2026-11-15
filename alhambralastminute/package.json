@@ -1,0 +1,17 @@
+{
+  "name": "alhambralastminute",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reservas last minute para la Alhambra con preautorización Stripe",
+  "main": "server.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "stripe": "^17.7.0"
+  }
+}

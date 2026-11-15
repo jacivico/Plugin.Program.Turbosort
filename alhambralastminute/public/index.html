@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alhambra Last Minute · Visitas de última hora a la Alhambra</title>
+  <meta name="description" content="Reserva tu visita a la Alhambra para los próximos 15 días. Elige día, indica los datos de los visitantes y deja una preautorización: solo se cobra si confirmamos tu visita.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="demo-banner" id="demo-banner" hidden data-i18n="demo.banner"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Alhambra Last Minute">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l4.4 6.6L28 6l-1.6 7.6L33 16l-6.6 2.4L28 26l-7.6-1.6L16 31l-4.4-6.6L4 26l1.6-7.6L-1 16l6.6-2.4L4 6l7.6 1.6z" transform="translate(1.6 1.6) scale(.9)"/></svg>
+      <span>Alhambra <em>Last Minute</em></span>
+    </a>
+    <nav class="site-nav">
+      <a href="#how" data-i18n="nav.how"></a>
+      <a href="#faq" data-i18n="nav.faq"></a>
+      <button class="lang" id="lang-toggle" type="button" aria-label="Change language"></button>
+      <a class="btn btn-gold btn-sm" href="#book" data-i18n="nav.book"></a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow" data-i18n="hero.eyebrow"></p>
+        <h1 data-i18n="hero.title"></h1>
+        <p class="lede" data-i18n="hero.lede"></p>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="#book" data-i18n="hero.cta"></a>
+          <span class="hero-note" data-i18n="hero.note"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="how">
+      <div class="wrap">
+        <p class="eyebrow dark" data-i18n="how.eyebrow"></p>
+        <h2 data-i18n="how.title"></h2>
+        <ol class="steps">
+          <li><span class="num">1</span><h3 data-i18n="how.s1.t"></h3><p data-i18n="how.s1.d"></p></li>
+          <li><span class="num">2</span><h3 data-i18n="how.s2.t"></h3><p data-i18n="how.s2.d"></p></li>
+          <li><span class="num">3</span><h3 data-i18n="how.s3.t"></h3><p data-i18n="how.s3.d"></p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="book" id="book">
+      <div class="wrap">
+        <p class="eyebrow dark" data-i18n="book.eyebrow"></p>
+        <h2 data-i18n="book.title"></h2>
+
+        <ol class="progress" id="progress" aria-label="Progress">
+          <li data-step="1"><span data-i18n="book.p1"></span></li>
+          <li data-step="2"><span data-i18n="book.p2"></span></li>
+          <li data-step="3"><span data-i18n="book.p3"></span></li>
+        </ol>
+
+        <div class="book-grid">
+          <div class="panel-col">
+            <!-- Paso 1: fecha -->
+            <section class="panel" data-panel="1">
+              <h3 data-i18n="s1.title"></h3>
+              <p class="hint" data-i18n="s1.hint"></p>
+              <div class="days" id="days" role="radiogroup"></div>
+
+              <h4 data-i18n="s1.slot"></h4>
+              <div class="chips" id="slots" role="radiogroup"></div>
+
+              <h4 data-i18n="s1.people"></h4>
+              <div class="stepper">
+                <button type="button" id="people-minus" aria-label="−">−</button>
+                <output id="people-count">1</output>
+                <button type="button" id="people-plus" aria-label="+">+</button>
+              </div>
+
+              <p class="error" id="err-1" role="alert" hidden></p>
+              <div class="actions"><button class="btn btn-dark" type="button" id="next-1" data-i18n="btn.continue"></button></div>
+            </section>
+
+            <!-- Paso 2: visitantes -->
+            <section class="panel" data-panel="2" hidden>
+              <h3 data-i18n="s2.title"></h3>
+              <p class="hint" data-i18n="s2.hint"></p>
+              <form id="visitors-form" novalidate>
+                <div id="visitors"></div>
+
+                <h4 data-i18n="s2.contact"></h4>
+                <div class="fields two">
+                  <label><span data-i18n="f.email"></span><input type="email" id="email" autocomplete="email" required maxlength="200"></label>
+                  <label><span data-i18n="f.phone"></span><input type="tel" id="phone" autocomplete="tel" required maxlength="30" placeholder="+34 600 000 000"></label>
+                </div>
+
+                <label class="check"><input type="checkbox" id="terms"><span data-i18n="s2.terms"></span></label>
+
+                <p class="error" id="err-2" role="alert" hidden></p>
+                <div class="actions">
+                  <button class="btn btn-ghost" type="button" data-back="1" data-i18n="btn.back"></button>
+                  <button class="btn btn-dark" type="submit" id="next-2" data-i18n="btn.toPayment"></button>
+                </div>
+              </form>
+            </section>
+
+            <!-- Paso 3: preautorización -->
+            <section class="panel" data-panel="3" hidden>
+              <h3 data-i18n="s3.title"></h3>
+              <p class="hint" data-i18n="s3.hint"></p>
+              <div id="payment-element"></div>
+              <div class="demo-pay" id="demo-pay" hidden>
+                <p data-i18n="demo.pay"></p>
+              </div>
+              <p class="error" id="err-3" role="alert" hidden></p>
+              <div class="actions">
+                <button class="btn btn-ghost" type="button" data-back="2" data-i18n="btn.back"></button>
+                <button class="btn btn-gold" type="button" id="pay"></button>
+              </div>
+              <p class="secure" data-i18n="s3.secure"></p>
+            </section>
+
+            <!-- Resultado -->
+            <section class="panel done" data-panel="4" hidden>
+              <div class="seal" aria-hidden="true">✓</div>
+              <h3 id="done-title"></h3>
+              <p id="done-text"></p>
+              <dl class="receipt" id="done-receipt"></dl>
+              <div class="actions"><button class="btn btn-ghost" type="button" id="restart" data-i18n="btn.new"></button></div>
+            </section>
+          </div>
+
+          <aside class="summary" id="summary" aria-live="polite">
+            <h3 data-i18n="sum.title"></h3>
+            <dl>
+              <div><dt data-i18n="sum.date"></dt><dd id="sum-date">—</dd></div>
+              <div><dt data-i18n="sum.slot"></dt><dd id="sum-slot">—</dd></div>
+            </dl>
+            <ul class="lines" id="sum-lines"></ul>
+            <div class="total"><span data-i18n="sum.total"></span><strong id="sum-total">—</strong></div>
+            <p class="fine" data-i18n="sum.fine"></p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq" id="faq">
+      <div class="wrap narrow">
+        <p class="eyebrow dark" data-i18n="faq.eyebrow"></p>
+        <h2 data-i18n="faq.title"></h2>
+        <div id="faq-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="brand-foot">Alhambra <em>Last Minute</em></p>
+      <p data-i18n="foot.disclaimer"></p>
+      <p class="fine">© <span id="year"></span> Alhambra Last Minute · <span data-i18n="foot.legal"></span></p>
+    </div>
+  </footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

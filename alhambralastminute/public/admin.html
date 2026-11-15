@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Reservas · Alhambra Last Minute</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body { background: #fff; }
+    .admin { max-width: 1200px; margin: 0 auto; padding: 32px 20px 80px; }
+    .admin h1 { font-size: 2.2rem; margin-bottom: .4rem; }
+    .bar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 1.2rem 0 1.6rem; }
+    .login { display: flex; gap: 10px; max-width: 420px; margin-top: 1.4rem; }
+    .booking { border: 1px solid var(--line); border-radius: 4px; padding: 18px; margin-bottom: 14px; }
+    .booking-head { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; justify-content: space-between; }
+    .booking-head strong { font-family: var(--serif); font-size: 1.4rem; display: inline-block; }
+    .booking-head strong::first-letter { text-transform: uppercase; }
+    .meta { color: var(--muted); font-size: .88rem; margin: .3rem 0 .8rem; }
+    .badge { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #eee; }
+    .badge.authorized { background: #fdf1d9; color: #8a5a0a; }
+    .badge.captured { background: #e2f1e4; color: #1f6b2c; }
+    .badge.released { background: #eee; color: #666; }
+    .badge.pending { background: #fbeeea; color: var(--error); }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); }
+    th { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .scroll { overflow-x: auto; }
+    .booking .actions { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <main class="admin">
+    <h1>Reservas</h1>
+    <p class="hint" id="mode"></p>
+
+    <form class="login" id="login">
+      <input type="password" id="password" placeholder="Contraseña de administración" autocomplete="current-password" required
+        style="flex:1;height:46px;padding:0 12px;border:1px solid var(--line);border-radius:4px;font:inherit">
+      <button class="btn btn-dark btn-sm" type="submit">Entrar</button>
+    </form>
+
+    <div id="content" hidden>
+      <div class="bar">
+        <label class="check" style="margin:0"><input type="checkbox" id="show-all"><span>Mostrar también solicitudes sin pago completado</span></label>
+        <button class="btn btn-ghost btn-sm" type="button" id="reload">Actualizar</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="logout">Salir</button>
+      </div>
+      <div id="list"></div>
+    </div>
+    <p class="error" id="error" role="alert" hidden></p>
+  </main>
+  <script src="/admin.js"></script>
+</body>
+</html>
